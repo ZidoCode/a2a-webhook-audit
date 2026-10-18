@@ -36,11 +36,20 @@ DANGEROUS_SUFFIXES = (".internal", ".local", ".localhost", ".zone")
 RISKY_PORTS = {22, 23, 25, 445, 3306, 5432, 6379, 9200, 2375, 2376, 8500}
 
 
+URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
+
+
 def _walk_urls(obj):
-    """Yield every string that looks like an http(s) URL, with its path."""
+    """Yield every string that looks like an http(s) URL, with its path.
+
+    Matches the scheme case-insensitively and anywhere in the string: clients
+    store URLs as "HTTPS://..." or inside a sentence, and a startswith() test
+    silently audited nothing.
+    """
     if isinstance(obj, str):
-        if obj.startswith(("http://", "https://")):
-            yield obj, ()
+        match = URL_RE.search(obj)
+        if match:
+            yield match.group(0).rstrip(").,;'\""), ()
         return
     if isinstance(obj, dict):
         for k, v in obj.items():

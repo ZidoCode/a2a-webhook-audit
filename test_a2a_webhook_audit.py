@@ -136,5 +136,19 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(self._run().returncode, 2)
 
 
+class TestUrlCasing(unittest.TestCase):
+    """Scheme matching must be case-insensitive and not require a bare string."""
+
+    def test_uppercase_scheme_is_audited(self):
+        findings, stats = wa.audit(lines(cfg("HTTPS://169.254.169.254/latest/meta-data")))
+        self.assertEqual(stats["urls_audited"], 1)
+        self.assertTrue(any("169.254.169.254" in m for m in sev(findings, "HIGH")))
+
+    def test_url_embedded_in_text_is_found(self):
+        findings, stats = wa.audit(lines(cfg("push to Http://10.0.0.5/cb now")))
+        self.assertEqual(stats["urls_audited"], 1)
+        self.assertTrue(any("10.0.0.5" in m for m in sev(findings, "HIGH")))
+
+
 if __name__ == "__main__":
     unittest.main()
